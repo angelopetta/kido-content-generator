@@ -1,156 +1,699 @@
-# Kido Content Generator — Product Specification
+# KIDO Content Generator — Product Specification
 
-## Overview
+## 1. Overview
 
-Kido Content Generator is a tool that generates age-appropriate educational and entertainment content for children. It leverages AI to create personalized stories, quizzes, and learning activities tailored to a child's age group and interests.
+The KIDO Content Generator is a standalone Next.js application that transforms processed intelligence from the KIDO Intelligence Platform into actionable government relations communications content. It serves the communications needs of **KIDO (Kitchenuhmaykoosib Inninuwug Dibenjikewin Onaakonikewin)**, an Indigenous child and family services organization operating under **Bill C-92** (An Act respecting First Nations, Inuit and Métis children, youth and families).
 
-## Goals
+The Intelligence Platform (deployed at `kido-government-relations-intellige.vercel.app`) already handles article ingestion, summarization, categorization, relevance scoring, and entity extraction via its Knowledge Engine. The Content Generator sits downstream — consuming that processed intelligence and turning it into polished, strategically crafted communications.
 
-- Generate engaging, safe, and age-appropriate content for children (ages 3–12)
-- Support multiple content types (stories, quizzes, activities, vocabulary exercises)
-- Allow customization by age group, topic, and difficulty level
-- Ensure all generated content is reviewed for safety and appropriateness
+### 1.1 Problem Statement
 
-## Target Users
+KIDO's Government Relations team needs to rapidly produce professional communications in response to legislative developments, media coverage, and policy shifts affecting Indigenous child welfare. Currently, turning intelligence insights into press releases, briefing notes, and political correspondence requires significant manual effort and writing expertise.
 
-- **Parents** looking for educational content for their children
-- **Teachers** who need customizable classroom materials
-- **Content creators** building kids' apps or platforms
+### 1.2 Solution
 
-## Content Types
+An AI-powered content generation tool that:
 
-| Type | Description | Age Range |
-|------|-------------|-----------|
-| Stories | Short illustrated narratives with moral lessons | 3–12 |
-| Quizzes | Multiple-choice questions on various subjects | 5–12 |
-| Vocabulary | Word definitions, synonyms, and usage examples | 4–10 |
-| Activities | Step-by-step craft or learning activities | 3–12 |
-| Math exercises | Age-appropriate math problems | 5–12 |
+- Pulls processed articles and digests from the Intelligence Platform
+- Accepts additional source materials (memos, policy positions, community input)
+- Generates publication-ready communications content using configurable templates
+- Maintains KIDO's organizational voice and Indigenous governance perspective
+- Stores generated content with full version history
 
-## Functional Requirements
+---
 
-### FR-1: Content Generation
+## 2. Target Users
 
-- Users can request content by specifying:
-  - Content type (story, quiz, vocabulary, activity, math)
-  - Age group (3–5, 6–8, 9–12)
-  - Topic or subject (animals, space, history, etc.)
-  - Language (default: English)
-- The system generates content using an LLM (Claude API)
-- Generated content is validated against safety filters before delivery
+| User | Role | Primary Use |
+|------|------|-------------|
+| Government Relations Staff | Day-to-day communications | Draft press releases, social posts, letters |
+| Leadership / Chiefs | Strategic oversight | Review briefing notes, approve messaging |
+| Spokespeople | Public-facing communications | Access talking points, media strategies |
+| Policy Analysts | Research & analysis | Generate briefing notes from intelligence data |
 
-### FR-2: Content Safety
+---
 
-- All output passes through a content moderation layer
-- No violent, scary, or inappropriate content is permitted
-- Language complexity is adjusted to match the target age group
-- Content avoids stereotypes and promotes inclusivity
+## 3. Input Sources
 
-### FR-3: API Interface
+### 3.1 Intelligence Platform API (Primary)
 
-- RESTful API with JSON request/response format
-- Endpoints:
-  - `POST /api/generate` — Generate new content
-  - `GET /api/content/:id` — Retrieve previously generated content
-  - `GET /api/content-types` — List available content types
-  - `GET /api/health` — Health check
+Data pulled from the existing Intelligence Platform via authenticated API calls:
 
-### FR-4: Content Storage
+- **Processed articles**: Already summarized, categorized, relevance-scored, with entity extractions (people, organizations, legislation, jurisdictions)
+- **AI-generated digests**: Periodic intelligence summaries produced by the Knowledge Engine
+- **Article metadata**: Categories, tags, relevance scores, source information, publication dates
 
-- Generated content is stored for retrieval and caching
-- Duplicate requests within a configurable TTL return cached results
-- Users can list and manage their previously generated content
+### 3.2 Document Upload (Phase 1)
 
-## Non-Functional Requirements
+User-uploaded supplementary materials:
 
-### NFR-1: Performance
+- **Internal memos** — organizational positions, strategy documents
+- **Policy positions** — KIDO's formal stances on issues
+- **Community input** — feedback, concerns, priorities from community members
+- **Talking points** — existing messaging to maintain consistency
+- **Claude Chat/Cowork outputs** — AI-assisted research and drafts
 
-- Content generation completes within 30 seconds
-- API response time for cached content < 200ms
-- System supports at least 50 concurrent users
+**Supported formats:** PDF, DOCX, TXT
 
-### NFR-2: Security
+Documents are parsed, stored, and made available as context for content generation.
 
-- API key authentication for all endpoints
-- Rate limiting (100 requests/hour per API key)
-- Input sanitization on all user-provided fields
+### 3.3 MCP Server Integration (Phase 2 — Future)
 
-### NFR-3: Reliability
+A Model Context Protocol server that allows Claude Cowork projects to push content directly to the Content Generator, eliminating the copy/paste workflow.
 
-- 99.5% uptime target
-- Graceful degradation when the LLM provider is unavailable
-- Retry logic with exponential backoff for external API calls
+---
 
-## Tech Stack
+## 4. Output Types
+
+Each output type has a dedicated prompt template that can be customized per generation.
+
+### 4.1 Media Strategies
+
+Strategic analysis documents that include:
+- Situational analysis of the issue/development
+- Recommended messaging framework
+- Media approach (proactive vs reactive, channels, timing)
+- Key talking points aligned with KIDO's position
+- Risk assessment and mitigation messaging
+
+### 4.2 Press Releases
+
+Formal press releases in KIDO's organizational voice:
+- Standard press release structure (headline, dateline, lead, body, boilerplate)
+- Quotes attributed to appropriate KIDO leadership
+- Background context from source intelligence
+- Contact information and organizational description
+
+### 4.3 Social Media Content
+
+Platform-specific content optimized for each channel:
+
+| Platform | Format | Constraints |
+|----------|--------|-------------|
+| X/Twitter | Thread-ready posts | 280 char limit per post, hashtag strategy |
+| Facebook | Long-form posts | Engagement-optimized, shareable format |
+| Instagram | Caption + hashtags | Visual-first language, hashtag blocks |
+
+### 4.4 Political Letters
+
+Formal correspondence to government officials:
+- Letters to Ministers (federal/provincial)
+- Letters to Members of Parliament
+- Letters to officials and bureaucrats
+- Proper salutations, formal tone, specific policy references
+- Clear asks and calls to action
+
+### 4.5 Briefing Notes
+
+Internal documents for KIDO leadership:
+- Issue/topic summary
+- Background and context (sourced from intelligence)
+- Analysis of implications for KIDO and Indigenous child welfare
+- Options and recommendations
+- Suggested next steps
+
+### 4.6 Talking Points
+
+Concise bullet-point messaging:
+- Key messages (3–5 core points)
+- Supporting data points and references
+- Anticipated questions and suggested responses
+- Messages to avoid / sensitive areas
+- Audience-specific variations
+
+---
+
+## 5. Customizable Generation Parameters
+
+All parameters are toggleable per generation request to optimize output.
+
+### 5.1 Tone
+
+| Option | Use Case |
+|--------|----------|
+| `formal` | Official correspondence, press releases, briefing notes |
+| `conversational` | Social media, community-facing communications |
+| `urgent` | Time-sensitive responses, crisis communications |
+| `diplomatic` | Government relations, political letters, sensitive topics |
+
+### 5.2 Audience
+
+| Option | Description |
+|--------|-------------|
+| `public` | General public, media consumers, community members |
+| `government` | Ministers, MPs, officials, bureaucrats |
+| `media` | Journalists, editors, media outlets |
+| `internal` | KIDO staff, leadership, board members |
+
+### 5.3 Additional Parameters
+
+- **Key messages to emphasize** — Free-text input for priority messaging
+- **KIDO's position/stance** — Organization's formal position on the issue
+- **Length/detail level** — Short (1 page), medium (2–3 pages), detailed (4+ pages)
+- **Source selection** — Choose which articles, digests, or uploaded documents to include as generation context
+
+---
+
+## 6. Architecture
+
+### 6.1 System Overview
+
+```
+┌─────────────────────────┐     API Calls      ┌──────────────────────────────┐
+│                         │ ◄────────────────── │                              │
+│   KIDO Intelligence     │                     │   KIDO Content Generator     │
+│   Platform              │                     │                              │
+│                         │  Articles, Digests  │   - Template Engine          │
+│   - Knowledge Engine    │ ──────────────────► │   - Claude API Integration   │
+│   - Article Processing  │                     │   - Document Upload          │
+│   - Entity Extraction   │                     │   - Version History          │
+│   - Digest Generation   │                     │   - Content Management       │
+│                         │                     │                              │
+└─────────────────────────┘                     └──────────────────────────────┘
+        Vercel                                           Vercel
+     (existing)                                       (new deploy)
+                                                          │
+                                                          │ Phase 2
+                                                          ▼
+                                                  ┌──────────────┐
+                                                  │ MCP Server   │
+                                                  │ (Claude      │
+                                                  │  Cowork)     │
+                                                  └──────────────┘
+```
+
+### 6.2 Tech Stack
+
+Mirrors the Intelligence Platform for consistency and shared developer knowledge.
 
 | Component | Technology |
 |-----------|------------|
-| Language | Python 3.12+ |
-| Framework | FastAPI |
+| Framework | Next.js 14+ (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Database | MongoDB (Mongoose ODM) |
+| Authentication | NextAuth.js |
 | AI Provider | Anthropic Claude API |
-| Database | PostgreSQL |
-| Caching | Redis |
-| Testing | pytest |
-| Containerization | Docker |
+| File Parsing | pdf-parse, mammoth (DOCX), plain text |
+| Deployment | Vercel |
+| File Storage | Vercel Blob or MongoDB GridFS |
 
-## Project Structure
+### 6.3 Project Structure
 
 ```
 kido-content-generator/
 ├── src/
-│   ├── api/            # FastAPI routes and middleware
-│   ├── core/           # Business logic and content generation
-│   ├── models/         # Database models and schemas
-│   ├── services/       # External service integrations (Claude API)
-│   └── utils/          # Helpers, validators, safety filters
+│   ├── app/                          # Next.js App Router
+│   │   ├── (auth)/                   # Auth pages (login, register)
+│   │   ├── (dashboard)/              # Main app layout
+│   │   │   ├── generate/             # Content generation interface
+│   │   │   ├── content/              # Generated content library
+│   │   │   ├── documents/            # Uploaded document management
+│   │   │   ├── templates/            # Template management
+│   │   │   └── settings/             # App settings
+│   │   ├── api/
+│   │   │   ├── auth/                 # NextAuth routes
+│   │   │   ├── generate/             # Content generation endpoint
+│   │   │   ├── content/              # CRUD for generated content
+│   │   │   ├── documents/            # Document upload & management
+│   │   │   ├── intelligence/         # Proxy to Intelligence Platform API
+│   │   │   └── templates/            # Template CRUD
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components/
+│   │   ├── generation/               # Generation form, parameter controls
+│   │   ├── content/                  # Content display, editor, history
+│   │   ├── documents/                # Upload UI, document list
+│   │   ├── intelligence/             # Article browser, digest viewer
+│   │   ├── templates/                # Template editor
+│   │   └── ui/                       # Shared UI components
+│   ├── lib/
+│   │   ├── ai/                       # Claude API client, prompt builder
+│   │   ├── db/                       # MongoDB connection, models
+│   │   ├── intelligence-api/         # Intelligence Platform API client
+│   │   ├── parsers/                  # PDF, DOCX, TXT parsing
+│   │   ├── templates/                # Default prompt templates
+│   │   └── auth/                     # Auth config
+│   └── types/                        # TypeScript type definitions
+├── public/
 ├── tests/
-│   ├── unit/
-│   └── integration/
-├── migrations/         # Database migrations
-├── docker/
 ├── .env.example
-├── pyproject.toml
+├── next.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── package.json
 └── README.md
 ```
 
-## API Examples
+---
 
-### Generate a Story
+## 7. Data Models
 
-**Request:**
-```json
-POST /api/generate
-{
-  "content_type": "story",
-  "age_group": "6-8",
-  "topic": "dinosaurs",
-  "language": "en"
+### 7.1 GeneratedContent
+
+```typescript
+interface GeneratedContent {
+  _id: ObjectId;
+  title: string;
+  contentType: 'media-strategy' | 'press-release' | 'social-media' | 'political-letter' | 'briefing-note' | 'talking-points';
+  content: string;                    // Generated content (Markdown)
+  parameters: {
+    tone: 'formal' | 'conversational' | 'urgent' | 'diplomatic';
+    audience: 'public' | 'government' | 'media' | 'internal';
+    lengthLevel: 'short' | 'medium' | 'detailed';
+    keyMessages: string[];
+    position: string;                 // KIDO's stance
+  };
+  sources: {
+    articleIds: string[];             // Intelligence Platform article IDs
+    digestIds: string[];              // Intelligence Platform digest IDs
+    documentIds: ObjectId[];          // Uploaded document references
+  };
+  templateId: ObjectId;              // Template used for generation
+  versions: ContentVersion[];        // Version history
+  status: 'draft' | 'review' | 'approved' | 'published';
+  createdBy: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ContentVersion {
+  version: number;
+  content: string;
+  parameters: GeneratedContent['parameters'];
+  createdAt: Date;
+  createdBy: ObjectId;
+  changeNote?: string;
 }
 ```
 
-**Response:**
-```json
-{
-  "id": "cnt_abc123",
-  "content_type": "story",
-  "title": "Dina the Friendly Dinosaur",
-  "body": "Once upon a time, in a land covered with tall ferns...",
-  "age_group": "6-8",
-  "topic": "dinosaurs",
-  "created_at": "2026-04-05T12:00:00Z"
+### 7.2 Document
+
+```typescript
+interface Document {
+  _id: ObjectId;
+  name: string;
+  originalFilename: string;
+  fileType: 'pdf' | 'docx' | 'txt';
+  fileSize: number;
+  storageKey: string;                 // Vercel Blob key or GridFS ID
+  extractedText: string;             // Parsed text content
+  category: 'memo' | 'policy-position' | 'community-input' | 'talking-points' | 'cowork-output' | 'other';
+  tags: string[];
+  uploadedBy: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
-## Milestones
+### 7.3 PromptTemplate
 
-1. **M1 — Foundation**: Project setup, API skeleton, database schema
-2. **M2 — Core Generation**: Claude API integration, basic story and quiz generation
-3. **M3 — Safety & Quality**: Content moderation, age-appropriate language filtering
-4. **M4 — Storage & Caching**: PostgreSQL persistence, Redis caching
-5. **M5 — Polish**: Rate limiting, documentation, Docker setup, tests
+```typescript
+interface PromptTemplate {
+  _id: ObjectId;
+  name: string;
+  contentType: GeneratedContent['contentType'];
+  systemPrompt: string;              // System-level instructions
+  userPromptTemplate: string;        // Template with {{variable}} placeholders
+  variables: string[];               // Expected variables
+  isDefault: boolean;                // Ships with app vs user-created
+  createdBy: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
-## Open Questions
+### 7.4 User
 
-- Should the system support image generation alongside text content?
-- Is multi-language support needed from day one or can it be added later?
-- Should there be a web UI or is API-only sufficient for v1?
+```typescript
+interface User {
+  _id: ObjectId;
+  name: string;
+  email: string;
+  role: 'admin' | 'editor' | 'viewer';
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+---
+
+## 8. API Routes
+
+### 8.1 Content Generation
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/generate` | Generate content from sources + parameters |
+| `POST` | `/api/generate/refine` | Refine/regenerate with adjusted parameters |
+
+### 8.2 Generated Content Management
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/content` | List generated content (paginated, filterable) |
+| `GET` | `/api/content/:id` | Get single content item with version history |
+| `PUT` | `/api/content/:id` | Update content (manual edits, creates new version) |
+| `DELETE` | `/api/content/:id` | Delete content |
+| `PATCH` | `/api/content/:id/status` | Update content status (draft → review → approved) |
+
+### 8.3 Document Upload
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/documents/upload` | Upload and parse document |
+| `GET` | `/api/documents` | List uploaded documents |
+| `GET` | `/api/documents/:id` | Get document details + extracted text |
+| `DELETE` | `/api/documents/:id` | Delete document |
+
+### 8.4 Intelligence Platform Proxy
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/intelligence/articles` | Fetch processed articles from Intelligence Platform |
+| `GET` | `/api/intelligence/articles/:id` | Get single article with full details |
+| `GET` | `/api/intelligence/digests` | Fetch AI-generated digests |
+| `GET` | `/api/intelligence/digests/:id` | Get single digest |
+
+### 8.5 Templates
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/templates` | List prompt templates |
+| `GET` | `/api/templates/:id` | Get template details |
+| `POST` | `/api/templates` | Create custom template |
+| `PUT` | `/api/templates/:id` | Update template |
+| `DELETE` | `/api/templates/:id` | Delete custom template |
+
+---
+
+## 9. UI Pages
+
+### 9.1 Dashboard (`/`)
+
+- Quick-action cards for each content type
+- Recent generations list
+- Intelligence Platform activity summary (latest articles/digests)
+
+### 9.2 Generate Content (`/generate`)
+
+Multi-step generation interface:
+
+1. **Select content type** — Choose output type (press release, briefing note, etc.)
+2. **Select sources** — Browse/search Intelligence Platform articles and digests; select uploaded documents
+3. **Configure parameters** — Set tone, audience, key messages, position, length
+4. **Review & generate** — Preview selected context, confirm, trigger generation
+5. **Review output** — View generated content with inline editing, regeneration, and refinement options
+
+### 9.3 Content Library (`/content`)
+
+- Filterable/searchable list of all generated content
+- Status badges (draft, review, approved, published)
+- Version history viewer with diff comparison
+- Export options (copy to clipboard, download as DOCX/PDF)
+
+### 9.4 Documents (`/documents`)
+
+- Drag-and-drop file upload zone
+- Document list with category filters
+- Document detail view showing extracted text
+- Category and tag management
+
+### 9.5 Templates (`/templates`)
+
+- List of prompt templates per content type
+- Template editor with variable preview
+- Default templates (ship with app) vs custom templates
+
+### 9.6 Settings (`/settings`)
+
+- Intelligence Platform API connection configuration
+- User management (admin only)
+- Default generation parameters
+
+---
+
+## 10. Content Generation Flow
+
+```
+User selects content type
+        │
+        ▼
+User selects sources
+├── Browse Intelligence Platform articles/digests
+├── Select uploaded documents
+└── Optionally paste additional context
+        │
+        ▼
+User configures parameters
+├── Tone (formal/conversational/urgent/diplomatic)
+├── Audience (public/government/media/internal)
+├── Key messages
+├── KIDO position
+└── Length/detail level
+        │
+        ▼
+System assembles prompt
+├── Load prompt template for content type
+├── Inject selected source content (articles, digests, documents)
+├── Apply parameter instructions (tone, audience, length)
+├── Include KIDO organizational context
+└── Include key messages and position
+        │
+        ▼
+Claude API call (streaming)
+        │
+        ▼
+Display generated content
+├── Streaming output in real-time
+├── Inline editing capability
+├── Regenerate / refine options
+└── Save to content library with version tracking
+```
+
+---
+
+## 11. Intelligence Platform Integration
+
+### 11.1 API Contract
+
+The Content Generator connects to the Intelligence Platform's existing API. Required endpoints on the Intelligence Platform side:
+
+```
+GET /api/articles?page=1&limit=20&category=...&sort=relevanceScore
+GET /api/articles/:id
+GET /api/digests?page=1&limit=10
+GET /api/digests/:id
+```
+
+Each article object is expected to include:
+- `title`, `source`, `url`, `publishedAt`
+- `summary` (AI-generated)
+- `categories` (from KIDO taxonomy)
+- `relevanceScore` (0–100)
+- `entities` (people, organizations, legislation, jurisdictions)
+- `tags`
+
+### 11.2 Authentication
+
+API-key-based authentication between the two applications. The Content Generator stores the Intelligence Platform API key in environment variables.
+
+### 11.3 Data Freshness
+
+- Articles and digests are fetched on-demand (not synced/cached long-term)
+- A short TTL cache (5 minutes) prevents redundant API calls during a generation session
+- Users can manually refresh the article/digest list
+
+---
+
+## 12. Prompt Template System
+
+### 12.1 Template Structure
+
+Each template consists of:
+- **System prompt**: Sets the AI's role, KIDO context, output format rules
+- **User prompt template**: Contains `{{variable}}` placeholders filled at generation time
+
+### 12.2 Available Variables
+
+| Variable | Description |
+|----------|-------------|
+| `{{contentType}}` | The selected output type |
+| `{{tone}}` | Selected tone parameter |
+| `{{audience}}` | Selected audience parameter |
+| `{{lengthLevel}}` | Selected length/detail level |
+| `{{keyMessages}}` | User-provided key messages |
+| `{{position}}` | KIDO's position on the issue |
+| `{{sourceArticles}}` | Concatenated article summaries and metadata |
+| `{{sourceDigests}}` | Concatenated digest content |
+| `{{sourceDocuments}}` | Concatenated uploaded document text |
+| `{{additionalContext}}` | Free-text user input |
+
+### 12.3 Default Templates
+
+The app ships with one default template per content type. These are seeded into the database on first run and can be cloned/customized by admins.
+
+### 12.4 Example: Press Release Template
+
+**System prompt:**
+```
+You are a senior communications specialist for KIDO (Kitchenuhmaykoosib
+Inninuwug Dibenjikewin Onaakonikewin), an Indigenous child and family
+services organization operating under Bill C-92. You write professional
+press releases that reflect KIDO's commitment to Indigenous self-governance
+in child welfare, community-based approaches, and the inherent rights of
+First Nations children and families.
+
+Always use respectful, culturally informed language. Reference relevant
+legislation (Bill C-92, UNDRIP, etc.) where appropriate. Maintain a
+{{tone}} tone appropriate for {{audience}} audiences.
+```
+
+**User prompt template:**
+```
+Write a press release based on the following intelligence and context.
+
+## Source Intelligence
+{{sourceArticles}}
+{{sourceDigests}}
+
+## Additional Context
+{{sourceDocuments}}
+{{additionalContext}}
+
+## Parameters
+- Key messages to emphasize: {{keyMessages}}
+- KIDO's position: {{position}}
+- Detail level: {{lengthLevel}}
+
+Generate a complete press release with headline, dateline, lead paragraph,
+body, quote from KIDO leadership, background section, and boilerplate.
+```
+
+---
+
+## 13. Environment Variables
+
+```bash
+# App
+NEXTAUTH_URL=https://kido-content-generator.vercel.app
+NEXTAUTH_SECRET=
+
+# Database
+MONGODB_URI=
+
+# AI
+ANTHROPIC_API_KEY=
+
+# Intelligence Platform
+INTELLIGENCE_PLATFORM_URL=https://kido-government-relations-intellige.vercel.app
+INTELLIGENCE_PLATFORM_API_KEY=
+
+# File Storage (Vercel Blob)
+BLOB_READ_WRITE_TOKEN=
+```
+
+---
+
+## 14. Authentication & Authorization
+
+### 14.1 Authentication
+
+- NextAuth.js with credentials provider (email/password) — matches Intelligence Platform
+- Session-based authentication with JWT tokens
+- Shared user accounts with the Intelligence Platform is a future consideration
+
+### 14.2 Roles & Permissions
+
+| Role | Generate | Edit | Delete | Manage Templates | Manage Users |
+|------|----------|------|--------|------------------|--------------|
+| Admin | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Editor | ✓ | ✓ | Own only | ✗ | ✗ |
+| Viewer | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+---
+
+## 15. Implementation Phases
+
+### Phase 1: Foundation (MVP)
+
+**Goal:** Working content generation from uploaded documents
+
+- [ ] Project scaffolding (Next.js, TypeScript, Tailwind, MongoDB, NextAuth)
+- [ ] Authentication (login, registration, role-based access)
+- [ ] Document upload and parsing (PDF, DOCX, TXT)
+- [ ] Prompt template system with default templates for all 6 content types
+- [ ] Content generation UI (multi-step form → Claude API → streamed output)
+- [ ] Generated content storage with version history
+- [ ] Content library with search, filter, and status management
+- [ ] Basic content export (copy to clipboard, download as TXT)
+
+### Phase 2: Intelligence Platform Integration
+
+**Goal:** Pull processed intelligence as generation context
+
+- [ ] Intelligence Platform API client
+- [ ] Article and digest browser UI
+- [ ] Source selection in generation flow
+- [ ] Caching layer for Intelligence Platform data
+
+### Phase 3: Polish & Templates
+
+**Goal:** Refined UX and customizable templates
+
+- [ ] Template editor UI for custom prompt templates
+- [ ] Content diff viewer (version comparison)
+- [ ] DOCX/PDF export for generated content
+- [ ] Refinement/regeneration flow (tweak parameters and re-generate)
+- [ ] Dashboard with activity summary
+
+### Phase 4: MCP Server Integration
+
+**Goal:** Claude Cowork can push content directly
+
+- [ ] MCP server implementation
+- [ ] Cowork-to-Content-Generator push protocol
+- [ ] Automatic source material ingestion from Cowork sessions
+
+---
+
+## 16. Non-Functional Requirements
+
+### 16.1 Performance
+
+- Content generation streaming begins within 2 seconds of request
+- Full generation completes within 60 seconds for detailed output
+- Page loads < 1 second on Vercel edge network
+- Document parsing < 10 seconds for files up to 10MB
+
+### 16.2 Security
+
+- All API routes require authentication
+- File upload validation (type, size limits: 10MB max)
+- Input sanitization on all user-provided fields
+- API keys stored as environment variables, never exposed to client
+- CORS restricted to app domain
+
+### 16.3 Reliability
+
+- Graceful handling of Claude API failures (retry with backoff, user notification)
+- Graceful handling of Intelligence Platform API unavailability
+- MongoDB connection pooling for Vercel serverless functions
+- Autosave drafts during generation to prevent data loss
+
+### 16.4 Scalability
+
+- Vercel serverless deployment scales automatically
+- MongoDB Atlas handles database scaling
+- No persistent server state — stateless API design
+
+---
+
+## 17. Open Questions
+
+1. **Shared authentication** — Should the Content Generator share user accounts with the Intelligence Platform, or maintain separate user management?
+2. **Content approval workflow** — Does the draft → review → approved flow need email/notification triggers?
+3. **Export formats** — Are DOCX and PDF sufficient, or are other formats needed (HTML email, etc.)?
+4. **Bilingual support** — Should generated content support French output for federal government communications?
+5. **Usage analytics** — Should the system track generation metrics (content types used, generation frequency, etc.)?
+6. **Intelligence Platform API** — What authentication mechanism does the Intelligence Platform currently use for API access? Does an external API exist or does one need to be built?
