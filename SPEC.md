@@ -20,6 +20,40 @@ An AI-powered content generation tool that:
 - Maintains KIDO's organizational voice and Indigenous governance perspective
 - Stores generated content with full version history
 
+### 1.3 Relationship to Intelligence Platform
+
+The Intelligence Platform is fully operational (all 4 phases complete) with:
+- **17 feed sources**: 9 RSS, 3 JSON API (GC News), 5 additional RSS, 4 scrape feeds
+- **AI processing pipeline**: Summarizer → Categorizer → Entity Extractor → Relevance Scorer → Alerter
+- **63+ articles** ingested and 53 AI-processed
+- **Digest generation**: Daily/weekly AI-synthesized intelligence briefings
+- **Feed discovery**: AI-recommended new sources
+- **Database**: MongoDB Atlas (`productiondb.unfk6vk.mongodb.net`, database: `kido-knowledge-engine`)
+- **Auth**: NextAuth.js credentials provider, JWT sessions, roles: `analyst` / `director` / `admin`
+
+The Content Generator consumes the Intelligence Platform's outputs — it does NOT replicate any ingestion, processing, or analysis functionality.
+
+### 1.4 Domain Context
+
+KIDO serves **Kitchenuhmaykoosib Inninuwug (KI)** First Nation, a remote fly-in community in Northern Ontario within **Treaty 9** territory. KI is a member of **Nishnawbe Aski Nation (NAN)**, which represents 49 First Nation communities across Treaty 9 and Treaty 5 areas.
+
+Key legislation and frameworks:
+- **Bill C-92** — Affirms the inherent right of self-government including jurisdiction over child and family services. KIDO operates under this Act.
+- **UNDRIP / Bill C-15** — International framework for Indigenous rights; Bill C-92 is a concrete implementation measure.
+- **Jordan's Principle** — Child-first principle ensuring First Nations children access services without jurisdictional delays.
+- **Section 35, Constitution Act 1982** — Recognizes Aboriginal and treaty rights; SCC confirmed in 2024 this includes self-government in child welfare.
+
+Key organizations referenced in communications:
+- **ISC** (Indigenous Services Canada) — Federal service delivery department
+- **CIRNAC** (Crown-Indigenous Relations and Northern Affairs) — Federal relationship/governance department
+- **AFN** (Assembly of First Nations) — National advocacy organization
+- **NAN** (Nishnawbe Aski Nation) — Regional political territorial organization
+- **Chiefs of Ontario** — Provincial advocacy organization (133 First Nations)
+- **CHRT** (Canadian Human Rights Tribunal) — Issued landmark child welfare rulings
+- **First Nations Caring Society** — Led the original CHRT complaint (Dr. Cindy Blackstock)
+
+Full glossary: See Appendix A (Domain Glossary).
+
 ---
 
 ## 2. Target Users
@@ -189,14 +223,16 @@ Mirrors the Intelligence Platform for consistency and shared developer knowledge
 | Component | Technology |
 |-----------|------------|
 | Framework | Next.js 14+ (App Router) |
-| Language | TypeScript |
+| Language | TypeScript (strict mode) |
 | Styling | Tailwind CSS |
-| Database | MongoDB (Mongoose ODM) |
-| Authentication | NextAuth.js |
-| AI Provider | Anthropic Claude API |
+| Database | MongoDB Atlas (Mongoose ODM) |
+| Authentication | NextAuth.js (credentials provider, JWT sessions) |
+| AI Provider | Anthropic Claude API (`claude-sonnet-4-20250514`) |
 | File Parsing | pdf-parse, mammoth (DOCX), plain text |
-| Deployment | Vercel |
+| Deployment | Vercel (serverless functions, maxDuration=60s) |
 | File Storage | Vercel Blob or MongoDB GridFS |
+| CI/CD | GitHub Actions (lint, type-check, build on push to main) |
+| Testing | Jest + React Testing Library |
 
 ### 6.3 Project Structure
 
@@ -489,10 +525,34 @@ GET /api/digests/:id
 Each article object is expected to include:
 - `title`, `source`, `url`, `publishedAt`
 - `summary` (AI-generated)
-- `categories` (from KIDO taxonomy)
+- `categories` (from KIDO taxonomy — see 11.4 below)
 - `relevanceScore` (0–100)
 - `entities` (people, organizations, legislation, jurisdictions)
 - `tags`
+
+### 11.4 Intelligence Platform Taxonomy Categories
+
+The article browser in the Content Generator should support filtering by the Intelligence Platform's taxonomy. These are the categories used by the categorizer:
+
+| Slug | Display Name |
+|------|-------------|
+| `bill-c92-jurisdiction` | Bill C-92 & Jurisdiction |
+| `chrt-rulings` | CHRT Rulings & Compliance |
+| `jordans-principle` | Jordan's Principle |
+| `fncfs-funding` | FNCFS Funding & Reform |
+| `undrip-implementation` | UNDRIP Implementation |
+| `nan-treaty9` | NAN & Treaty 9 |
+| `provincial-child-welfare` | Provincial Child Welfare |
+| `federal-policy` | Federal Policy & Legislation |
+| `supreme-court` | Supreme Court Decisions |
+| `data-sovereignty` | Indigenous Data Sovereignty |
+| `reconciliation-trc` | Reconciliation & TRC |
+| `fiscal-relations` | Fiscal Relations |
+| `health-services` | Health Services |
+| `education` | Education |
+| `housing-infrastructure` | Housing & Infrastructure |
+
+Articles typically have 2–4 categories. The `nan-treaty9` tag appears on any content mentioning NAN, Treaty 9, or KI directly.
 
 ### 11.2 Authentication
 
@@ -657,16 +717,34 @@ BLOB_READ_WRITE_TOKEN=
 
 ---
 
-## 16. Non-Functional Requirements
+## 16. Coding Conventions
 
-### 16.1 Performance
+Matches the Intelligence Platform for consistency:
+
+- **TypeScript strict mode** — no `any` types, all functions typed
+- **Async/await** — never raw promises or callbacks
+- **Error handling** — every async function wrapped in try/catch with structured error logging
+- **Naming**: camelCase for variables/functions, PascalCase for components/types, SCREAMING_SNAKE for env vars
+- **Imports**: absolute imports via `@/` alias mapped to `src/`
+- **Components**: functional components only, props typed via interfaces
+- **API routes**: consistent response shape `{ success: boolean, data?: T, error?: string }`
+- **Database queries**: always use Mongoose models, never raw MongoDB driver calls
+- **AI calls**: always go through a centralized AI client (`src/lib/ai/`), never call Claude API directly from routes or components
+- **Mobile-first**: UI must work on mobile (responsive sidebar with hamburger menu)
+- **No PII**: This system must never store personally identifiable information about children, families, or service recipients
+
+---
+
+## 17. Non-Functional Requirements
+
+### 17.1 Performance
 
 - Content generation streaming begins within 2 seconds of request
 - Full generation completes within 60 seconds for detailed output
 - Page loads < 1 second on Vercel edge network
 - Document parsing < 10 seconds for files up to 10MB
 
-### 16.2 Security
+### 17.2 Security
 
 - All API routes require authentication
 - File upload validation (type, size limits: 10MB max)
@@ -674,14 +752,14 @@ BLOB_READ_WRITE_TOKEN=
 - API keys stored as environment variables, never exposed to client
 - CORS restricted to app domain
 
-### 16.3 Reliability
+### 17.3 Reliability
 
 - Graceful handling of Claude API failures (retry with backoff, user notification)
 - Graceful handling of Intelligence Platform API unavailability
 - MongoDB connection pooling for Vercel serverless functions
 - Autosave drafts during generation to prevent data loss
 
-### 16.4 Scalability
+### 17.4 Scalability
 
 - Vercel serverless deployment scales automatically
 - MongoDB Atlas handles database scaling
@@ -689,7 +767,7 @@ BLOB_READ_WRITE_TOKEN=
 
 ---
 
-## 17. Open Questions
+## 18. Open Questions
 
 1. **Shared authentication** — Should the Content Generator share user accounts with the Intelligence Platform, or maintain separate user management?
 2. **Content approval workflow** — Does the draft → review → approved flow need email/notification triggers?
@@ -697,3 +775,59 @@ BLOB_READ_WRITE_TOKEN=
 4. **Bilingual support** — Should generated content support French output for federal government communications?
 5. **Usage analytics** — Should the system track generation metrics (content types used, generation frequency, etc.)?
 6. **Intelligence Platform API** — What authentication mechanism does the Intelligence Platform currently use for API access? Does an external API exist or does one need to be built?
+
+---
+
+## Appendix A: Domain Glossary
+
+Key terms, organizations, and legislation referenced throughout the Content Generator's templates and outputs. This glossary ensures accurate terminology in all generated communications.
+
+### Organizations
+
+| Abbreviation | Full Name | Description |
+|-------------|-----------|-------------|
+| **KIDO** | Kitchenuhmaykoosib Inninuwug Dibenjikewin Onaakonikewin | The client organization. Child and family services body operating under Bill C-92 for KI First Nation. |
+| **KI** | Kitchenuhmaykoosib Inninuwug | First Nation community in Northern Ontario (Big Trout Lake). Remote fly-in community in Treaty 9 territory. |
+| **NAN** | Nishnawbe Aski Nation | Political territorial organization representing 49 First Nations across Treaty 9 and Treaty 5 (Northern Ontario). |
+| **ISC** | Indigenous Services Canada | Federal department delivering services to First Nations, Inuit, and Métis peoples. Administers FNCFS and Jordan's Principle. |
+| **CIRNAC** | Crown-Indigenous Relations and Northern Affairs Canada | Federal department for Crown-Indigenous relationships, treaty implementation, self-government agreements. |
+| **AFN** | Assembly of First Nations | National advocacy organization representing First Nations in Canada. |
+| **CHRT** | Canadian Human Rights Tribunal | Issued landmark 2016 ruling on First Nations child welfare discrimination. |
+| **FNCCS** | First Nations Caring Society | Led by Dr. Cindy Blackstock. Filed the original CHRT complaint. |
+| **FNIHB** | First Nations and Inuit Health Branch | Branch within ISC responsible for health services. |
+| **IFNA** | Independent First Nations Alliance | Tribal Council within NAN territory; KI is a member. |
+
+### Legislation
+
+| Reference | Description |
+|-----------|-------------|
+| **Bill C-92** | An Act respecting First Nations, Inuit and Métis children, youth and families. In force Jan 1, 2020. Affirms inherent right of self-government including jurisdiction over child and family services. |
+| **UNDRIP** | United Nations Declaration on the Rights of Indigenous Peoples. |
+| **Bill C-15** (UNDRIP Act) | Federal legislation requiring Canadian laws to be consistent with UNDRIP. |
+| **Jordan's Principle** | Child-first principle ensuring First Nations children access services without jurisdictional delays. Named after Jordan River Anderson. |
+| **FNCFS Program** | First Nations Child and Family Services Program. ISC-administered, funds ~140 delegated agencies. |
+| **Section 35** | Constitution Act, 1982. Recognizes Aboriginal and treaty rights. SCC confirmed in 2024 it includes self-government in child welfare. |
+| **Treaty 9** | James Bay Treaty (1905-06). Covers most of Northern Ontario including KI territory. |
+| **TRC** | Truth and Reconciliation Commission. 94 Calls to Action; Call #4 addresses child welfare. |
+
+### Key Concepts
+
+| Term | Definition |
+|------|-----------|
+| **Substantive equality** | Distinct treatment may be needed to achieve equal outcomes. Core principle in Bill C-92. |
+| **Cultural continuity** | Services must preserve a child's connection to culture, language, community, and family. |
+| **Best interests of the child** | Primary consideration under Bill C-92 with specific Indigenous-context factors. |
+| **Coordination agreement** | Agreement between Indigenous governing body, federal, and provincial governments under Bill C-92. |
+| **Delegated agency** | CFS agency delegated authority by a province. Bill C-92 enables moving beyond this model to full jurisdiction. |
+| **Notice of intent** | Formal notice to ISC and province that an Indigenous governing body intends to exercise CFS jurisdiction. |
+| **Inherent right of self-government** | Right of Indigenous peoples to govern themselves, recognized under s.35 and affirmed by SCC in 2024. |
+
+### Language Notes
+
+- Always use full name on first reference, abbreviation thereafter
+- KI = the First Nation community; KIDO = the child and family services organization
+- ISC and CIRNAC are separate departments — never conflate them
+- Jordan's Principle always has the apostrophe
+- Treaty 9 is the common name; "James Bay Treaty" is the formal name
+- **Anishininimowin** = Oji-Cree language spoken in KI and western NAN territory
+- **Anishinaabemowin** = broader Ojibway language family (Southern Ontario)
